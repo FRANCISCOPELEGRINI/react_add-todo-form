@@ -1,67 +1,48 @@
-interface TodoVar {
-  id: number;
-  title: string;
-  completed: boolean;
-  userId: number;
-}
+import React from 'react';
+
 interface User {
   id: number;
   name: string;
   username: string;
   email: string;
 }
+
+interface TodoVar {
+  id: number;
+  title: string;
+  completed: boolean;
+  user: User;
+}
+
 interface TodoListProps {
-  a: TodoVar;
-  b: number;
-  usersFromServer: User[];
+  todo: TodoVar;
+  index: number;
   setUsers: React.Dispatch<React.SetStateAction<TodoVar[]>>;
 }
 
 export const TodoList: React.FC<TodoListProps> = ({
-  a,
-  b,
-  usersFromServer,
+  todo,
+  index,
   setUsers,
 }) => {
   const setTrue = (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
     setUsers(prev => {
       return prev.map((u: TodoVar, i: number) =>
-        i === b ? { ...u, completed: true } : u,
+        i === index ? { ...u, completed: true } : u,
       );
     });
   };
 
-  const returnUser = (userId: number) => {
-    const userName = ['', ''];
-
-    for (let i = 0; i < usersFromServer.length; i++) {
-      if (usersFromServer[i].id === userId) {
-        userName[0] = usersFromServer[i].name;
-      }
-
-      if (usersFromServer[i].id === userId) {
-        userName[1] = usersFromServer[i].email;
-      }
-    }
-
-    return userName;
-  };
-
   return (
     <article
-      key={a.id}
-      data-id={a.id}
-      className={`TodoInfo TodoInfo${a.completed ? '--completed' : ''}`}
+      data-id={todo.id}
+      className={`TodoInfo TodoInfo${todo.completed ? '--completed' : ''}`}
     >
-      <h2 className="TodoInfo__title">{a.title}</h2>
+      <h2 className="TodoInfo__title">{todo.title}</h2>
 
-      <a
-        className="UserInfo"
-        href={returnUser(a.userId)[1]}
-        onClick={e => setTrue(e)}
-      >
-        {returnUser(a.userId)[0]}
+      <a className="UserInfo" href={todo.user.email} onClick={e => setTrue(e)}>
+        {todo.user.name}
       </a>
     </article>
   );

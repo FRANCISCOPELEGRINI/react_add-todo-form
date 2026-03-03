@@ -5,39 +5,53 @@ import usersFromServer from '../api/users';
 import todosFromServer from '../api/todos';
 import { UserInfo } from '../UserInfo';
 
-// interface User {
-//   id: number;
-//   name: string;
-//   username: string;
-//   email: string;
-// }
+interface User {
+  id: number;
+  name: string;
+  username: string;
+  email: string;
+}
 
 interface TodoVar {
   id: number;
   title: string;
   completed: boolean;
-  userId: number;
+  user: User;
 }
 
 export const Generator = () => {
-  const [users, setUsers] = useState<TodoVar[]>(todosFromServer);
+  const [users, setUsers] = useState<TodoVar[]>(
+    todosFromServer.map(todo => {
+      const fullUser = usersFromServer.find(u => u.id === todo.userId)!;
+
+      return {
+        id: todo.id,
+        title: todo.title,
+        completed: todo.completed,
+        user: fullUser,
+      };
+    }),
+  );
+
   const [selectedUser, setSelectedUser] = useState(0);
   const [aparecerTxt, SetAparecerTxt] = useState<boolean[]>([false, false]);
+  const [isOpen, setIsOpen] = useState<boolean>(false);
+
   const [todoVar, setTodoVar] = useState<TodoVar>({
     id: users[users.length - 1].id + 1,
     title: '',
     completed: false,
-    userId: 0,
+    user: usersFromServer[0],
   });
-  const [isOpen, setIsOpen] = useState<boolean>(false);
 
   const cleanTodo = () => {
     setTodoVar({
-      id: todosFromServer[todosFromServer.length - 1].id + 1,
+      id: users[users.length - 1].id + 1,
       title: '',
       completed: false,
-      userId: 0,
+      user: usersFromServer[0],
     });
+
     setIsOpen(false);
   };
 
@@ -45,7 +59,7 @@ export const Generator = () => {
     event: ChangeEvent<HTMLInputElement | HTMLSelectElement>,
     type: string,
   ) => {
-    if (type === 'title' && 'target' in event) {
+    if (type === 'title') {
       setTodoVar(prev => ({
         ...prev,
         title: (event as ChangeEvent<HTMLInputElement>).target.value,
@@ -55,29 +69,33 @@ export const Generator = () => {
     }
 
     if (type === 'user') {
-      const value =
-        typeof event === 'string'
-          ? event
-          : (event as ChangeEvent<HTMLSelectElement>).target.value;
+      const value = (event as ChangeEvent<HTMLSelectElement>).target.value;
 
-      setTodoVar(prev => ({ ...prev, userId: Number(value) }));
+      const selected = usersFromServer.find(u => u.id === Number(value));
+
+      if (selected) {
+        setTodoVar(prev => ({
+          ...prev,
+          user: selected,
+        }));
+      }
     }
   };
 
   const onSubmitAll = (
     formulario: string,
-    e: React.ChangeEvent<HTMLSelectElement> | React.FormEvent<HTMLFormElement>,
+    e: React.FormEvent<HTMLFormElement>,
   ) => {
     e.preventDefault();
+
     if (formulario === 'todo') {
-      if (todoVar.title !== '' && todoVar.userId !== 0) {
-        setUsers(prov => [...prov, todoVar]);
+      if (todoVar.title !== '' && todoVar.user.id !== 0) {
+        setUsers(prev => [...prev, todoVar]);
         SetAparecerTxt([false, false]);
         cleanTodo();
-        setIsOpen(false);
         setSelectedUser(0);
       } else {
-        SetAparecerTxt([todoVar.title === '', todoVar.userId === 0]);
+        SetAparecerTxt([todoVar.title === '', todoVar.user.id === 0]);
       }
     }
   };
@@ -119,11 +137,12 @@ export const Generator = () => {
             <option disabled={isOpen} value="0">
               Choose a user
             </option>
+
             {usersFromServer.map(r => UserInfo(r))}
           </select>
 
           <span className="error">
-            {aparecerTxt[1] && todoVar.userId === 0
+            {aparecerTxt[1] && todoVar.user.id === 0
               ? 'Please choose a user'
               : ''}
           </span>
@@ -133,19 +152,16 @@ export const Generator = () => {
           Add
         </button>
       </form>
-      {/* USERS.TS */}
+
       <section className="TodoList">
-        <section className="TodoList">
-          {users.map((a, b) => (
-            <TodoList
-              key={a.id}
-              a={a}
-              b={b}
-              usersFromServer={usersFromServer}
-              setUsers={setUsers}
-            />
-          ))}
-        </section>
+        {users.map((todo, index) => (
+          <TodoList
+            key={todo.id}
+            todo={todo}
+            index={index}
+            setUsers={setUsers}
+          />
+        ))}
       </section>
     </div>
   );
